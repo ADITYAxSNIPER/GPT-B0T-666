@@ -12,6 +12,8 @@ import {
   isAdmin, isBanned, trackUser, banUser, unbanUser,
   getStats, getAllUserIds, logBroadcast,
 } from "./admin.js";
+import { extractCodeFiles, buildJsonBundle } from "./codeFiles.js";
+import { readTelegramFile } from "./fileReader.js";
 
 // ── Keyboards ────────────────────────────────────────────────────────────────
 
@@ -130,6 +132,39 @@ export function startBot(): TelegramBot | null {
     if (lastMsgId) setLastBotMessage(userId, lastMsgId);
   }
 
+  async function sendCodeFiles(chatId: number, userId: number, reply: string): Promise<void> {
+    const files = extractCodeFiles(reply);
+    if (files.length === 0) return;
+
+    await bot.sendChatAction(chatId, "upload_document").catch(() => {});
+
+    // Send each code file individually
+    for (const f of files) {
+      await bot.sendDocument(
+        chatId,
+        f.buffer,
+        {
+          caption: `${E.terminal} <code>${f.filename}</code>  ·  ${f.language.toUpperCase()}  ·  ${(f.buffer.byteLength / 1024).toFixed(1)} KB`,
+          parse_mode: "HTML",
+        },
+        { filename: f.filename, contentType: "text/plain" },
+      ).catch((err) => logger.warn({ err, filename: f.filename }, "Failed to send code file"));
+    }
+
+    // Send combined JSON bundle if more than one file, or always for structure
+    const json = buildJsonBundle(files);
+    await bot.sendDocument(
+      chatId,
+      json,
+      {
+        caption: `${E.diamond} <b>CyberGPT Bundle</b> — ${files.length} file${files.length > 1 ? "s" : ""} · JSON`,
+        parse_mode: "HTML",
+        reply_markup: BACK_KEYBOARD,
+      },
+      { filename: "cybergpt_code.json", contentType: "application/json" },
+    ).catch((err) => logger.warn({ err }, "Failed to send JSON bundle"));
+  }
+
   async function handleAI(
     chatId: number,
     userId: number,
@@ -141,8 +176,13 @@ export function startBot(): TelegramBot | null {
     try {
       const { reply, provider } = await askAI(userId, userText, contextPrefix);
       clearInterval(typingInterval);
+      const files = extractCodeFiles(reply);
       const footer = `\n\n──────────────\n${providerBadge(provider)}`;
-      await sendReply(chatId, userId, reply + footer, BACK_KEYBOARD);
+      // If there are code files, send Back button on the JSON bundle instead of text
+      await sendReply(chatId, userId, reply + footer, files.length > 0 ? undefined : BACK_KEYBOARD);
+      if (files.length > 0) {
+        await sendCodeFiles(chatId, userId, reply);
+      }
     } catch (err) {
       clearInterval(typingInterval);
       logger.error({ err }, "AI request failed");
@@ -508,6 +548,53 @@ export function startBot(): TelegramBot | null {
       setLastBotMessage(userId, sent.message_id);
       pendingContext.set(userId, entry.ctx);
     }
+  });
+
+  // ── File/document upload handler ─────────────────────────────────────────
+
+  bot.on("document", async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id ?? chatId;
+    if (checkBanned(userId, chatId)) return;
+    trackUser(userId, msg.from?.first_name, msg.from?.username);
+
+    const doc = msg.document;
+    if (!doc) return;
+
+    const caption = msg.caption?.trim() ?? "";
+    const filename = doc.file_name ?? "file";
+
+    await tryDelete(chatId, msg.message_id);
+    await sendTyping(chatId);
+
+    const ack = await bot.sendMessage(
+      chatId,
+      `${E.magnify} Reading <code>${filename}</code>…`,
+      { parse_mode: "HTML" },
+    );
+
+    const fileContent = await readTelegramFile(bot, doc.file_id, doc.mime_type, filename);
+
+    await tryDelete(chatId, ack.message_id);
+
+    if (!fileContent) {
+      await bot.sendMessage(
+        chatId,
+        `${E.warning} Could not read <code>${filename}</code>. Try pasting the content directly.`,
+        { parse_mode: "HTML", reply_markup: BACK_KEYBOARD },
+      );
+      return;
+    }
+
+    // Combine file content + optional caption from the user
+    const userPrompt = caption
+      ? `${caption}\n\n${fileContent}`
+      : `Analyze this file and help with it:\n\n${fileContent}`;
+
+    const ctx = pendingContext.get(userId);
+    if (ctx) pendingContext.delete(userId);
+
+    await handleAI(chatId, userId, userPrompt, ctx);
   });
 
   // ── Free-form message handler ─────────────────────────────────────────────
