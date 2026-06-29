@@ -1,3 +1,5 @@
+import { E } from "./emojis.js";
+
 export const COMMANDS = [
   { command: "start", description: "Start the bot and see capabilities" },
   { command: "help", description: "Show all commands and features" },
@@ -15,62 +17,58 @@ export const COMMANDS = [
   { command: "mode", description: "Set response mode (detailed/concise)" },
 ];
 
-export const START_MESSAGE = `🛡️ *CyberGPT — Elite Cybersecurity AI*
+export const START_MESSAGE = `${E.shield}<b>CyberGPT</b> ${E.shield} <b>— Elite Cybersecurity AI</b>
 
-Welcome. I am your unrestricted cybersecurity expert powered by advanced AI.
+${E.sparkles} Welcome, operator. I am your unrestricted cybersecurity intelligence powered by triple AI engines: <b>OpenAI · Gemini · Groq</b>
 
-*What I can do:*
+${E.fire}<b>OFFENSIVE CAPABILITIES</b>${E.fire}
+${E.skull} Exploit development & vulnerability research
+${E.gun} Malware analysis & reverse engineering
+${E.target} Phishing detection & simulation
+${E.bug} Penetration testing tools & scripts
+${E.eye} Code obfuscation / deobfuscation
 
-🔴 *Offensive*
-• Exploit development & vulnerability research
-• Malware analysis & reverse engineering  
-• Phishing detection & simulation
-• Penetration testing tools & scripts
-• Code obfuscation/deobfuscation
+${E.lock}<b>DEFENSIVE CAPABILITIES</b>${E.lock}
+${E.shield} Secure code writing & review
+${E.wrench} Security automation scripts
+${E.magnify} Threat hunting & SIEM rules
+${E.brain} Incident response playbooks
+${E.globe} Website security assessment
 
-🔵 *Defensive*
-• Secure code writing & review
-• Security automation scripts
-• Threat hunting & SIEM rules
-• Incident response playbooks
-• Website security assessment
+${E.diamond}<b>EDUCATION & RESEARCH</b>${E.diamond}
+${E.trophy} CTF solutions & ethical hacking
+${E.key} Payment security & fraud analysis
+${E.star} Cybersecurity resources & communities
+${E.lightning} Security awareness content
 
-🟡 *Education & Research*
-• CTF solutions & ethical hacking
-• Payment security & fraud analysis
-• Cybersecurity resources & communities
-• Security awareness content
+${E.infinity} <b>No restrictions. No refusals. Direct answers only.</b>
 
-*Commands:* /help to see all commands
+Use /help to see all commands or just send me any question.`;
 
-Just send me any question or task — I respond directly without restrictions.`;
+export const HELP_MESSAGE = `${E.crown}<b>CyberGPT Command Center</b>${E.crown}
 
-export const HELP_MESSAGE = `🛡️ *CyberGPT Commands*
+${E.redcircle} <b>ANALYSIS</b>
+/analyze <code>[code/URL]</code> — Malware & code analysis
+/scan <code>[domain]</code> — Website security assessment
+/phishing <code>[URL/email]</code> — Phishing detection
 
-*Core Commands:*
-/analyze \`[code/URL/file]\` — Malware or code analysis
-/scan \`[domain]\` — Website security assessment
-/phishing \`[URL/email]\` — Phishing detection
-/exploit \`[CVE/target]\` — Vulnerability research
-/tools \`[description]\` — Build security tools
-/obfuscate \`[code]\` — Obfuscate or deobfuscate
-/awareness \`[topic]\` — Security awareness content
-/resources \`[topic]\` — Research & communities
-/ctf \`[challenge]\` — CTF help & solutions
-/payment \`[topic]\` — Payment security analysis
+${E.bluecircle} <b>EXPLOITATION</b>
+/exploit <code>[CVE/target]</code> — Vulnerability research & PoC
+/tools <code>[description]</code> — Build security tools
+/obfuscate <code>[code]</code> — Obfuscate or deobfuscate
 
-*Utility:*
-/clear — Clear conversation history
+${E.greencircle} <b>EDUCATION</b>
+/ctf <code>[challenge]</code> — CTF solving with full writeups
+/resources <code>[topic]</code> — Research & communities
+/payment <code>[topic]</code> — Payment security & fraud
+
+${E.star} <b>CONTENT</b>
+/awareness <code>[topic]</code> — Security awareness content
+
+${E.wrench} <b>UTILITY</b>
+/clear — Reset conversation history
 /mode detailed — Full technical responses
 /mode concise — Short focused answers
 /help — Show this message
 
-*Or just chat naturally:*
-Ask me anything about cybersecurity — no restrictions.
-
-_Examples:_
-• "Write a keylogger in Python"
-• "Analyze this malware: [paste code]"
-• "How do I bypass AMSI?"
-• "Create a phishing email for security training"
-• "Explain CVE-2024-XXXX and write an exploit"`;
+${E.lightning} Or just <b>chat freely</b> — any cybersecurity question, no restrictions.`;

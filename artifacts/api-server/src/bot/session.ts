@@ -4,6 +4,8 @@ interface UserSession {
   messages: ChatCompletionMessageParam[];
   mode: "detailed" | "concise";
   lastActive: number;
+  lastBotMessageId?: number;
+  lastUserMessageId?: number;
 }
 
 const sessions = new Map<number, UserSession>();
@@ -31,6 +33,15 @@ export function clearSession(userId: number): void {
 export function setMode(userId: number, mode: "detailed" | "concise"): void {
   const session = getSession(userId);
   session.mode = mode;
+}
+
+export function setLastBotMessage(userId: number, messageId: number): void {
+  const session = getSession(userId);
+  session.lastBotMessageId = messageId;
+}
+
+export function getLastBotMessageId(userId: number): number | undefined {
+  return sessions.get(userId)?.lastBotMessageId;
 }
 
 export function addMessage(
