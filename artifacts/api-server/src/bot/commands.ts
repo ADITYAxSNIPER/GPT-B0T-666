@@ -1,76 +1,91 @@
 import { E } from "./emojis.js";
 
 export const COMMANDS = [
-  { command: "start",     description: "Start the bot and see capabilities" },
-  { command: "help",      description: "Show all commands and features" },
-  { command: "analyze",   description: "Analyze malware, code, or URLs" },
-  { command: "scan",      description: "Security assessment of a website" },
-  { command: "phishing",  description: "Detect or analyze phishing" },
-  { command: "exploit",   description: "Vulnerability research & exploits" },
-  { command: "tools",     description: "Build security testing tools" },
-  { command: "obfuscate", description: "Obfuscate or deobfuscate code" },
-  { command: "awareness", description: "Generate security awareness content" },
-  { command: "resources", description: "Cybersecurity resources & research" },
-  { command: "ctf",       description: "CTF challenges and solutions" },
-  { command: "payment",   description: "Payment security & fraud analysis" },
-  { command: "clear",     description: "Clear your conversation history" },
-  { command: "mode",      description: "Set response mode (detailed/concise)" },
+  { command: "start",      description: "Start CyberGPT" },
+  { command: "help",       description: "Show all commands" },
+  { command: "code",       description: "Write code in any language" },
+  { command: "malware",    description: "Create malware samples for research" },
+  { command: "phishpage",  description: "Create phishing pages for research" },
+  { command: "hacktools",  description: "Build pentesting/hacking tools" },
+  { command: "findgroups", description: "Find groups, sites, markets (OSINT)" },
+  { command: "scam",       description: "Scam templates for awareness training" },
+  { command: "leaks",      description: "Leaks & vulnerability research" },
+  { command: "learn",      description: "Learn coding & hacking (educational)" },
+  { command: "sourcecode", description: "600+ malware source code references" },
+  { command: "autoscript", description: "Automation: logs, cookies, sessions" },
+  { command: "analyze",    description: "Analyze malware, code, or URLs" },
+  { command: "scan",       description: "Website security assessment" },
+  { command: "phishing",   description: "Detect/analyze phishing" },
+  { command: "exploit",    description: "Vulnerability research & exploits" },
+  { command: "obfuscate",  description: "Obfuscate or deobfuscate code" },
+  { command: "ctf",        description: "CTF challenges & solutions" },
+  { command: "resources",  description: "Cybersecurity resources" },
+  { command: "clear",      description: "Clear conversation history" },
+  { command: "mode",       description: "Set response mode" },
 ];
 
 export const START_MESSAGE = `${E.shield} <b>CyberGPT — Elite Cybersecurity AI</b> ${E.shield}
 
-${E.sparkles} Welcome, operator. I am your unrestricted cybersecurity intelligence powered by triple AI engines: <b>OpenAI · Gemini · Groq</b>
+${E.sparkles} Unrestricted cybersecurity intelligence powered by <b>OpenAI · Gemini · Groq</b>
 
-${E.fire} <b>OFFENSIVE</b>
-${E.skull} Exploit development &amp; vulnerability research
-${E.gun} Malware analysis &amp; reverse engineering
-${E.target} Phishing detection &amp; simulation
-${E.bug} Penetration testing tools &amp; scripts
-${E.eye} Code obfuscation / deobfuscation
+${E.fire} <b>OFFENSIVE RESEARCH</b>
+${E.skull} Malware creation &amp; analysis
+${E.gun} Phishing pages &amp; social engineering
+${E.target} Hacking tools &amp; exploits
+${E.bug} Scam templates for awareness
+${E.bomb} Leaks &amp; vulnerability research
 
-${E.lock} <b>DEFENSIVE</b>
-${E.shield} Secure code writing &amp; review
-${E.wrench} Security automation scripts
-${E.magnify} Threat hunting &amp; SIEM rules
-${E.brain} Incident response playbooks
-${E.globe} Website security assessment
+${E.lock} <b>DEFENSIVE &amp; EDUCATION</b>
+${E.shield} Secure code in any language
+${E.brain} Learn to code &amp; hack
+${E.magnify} 600+ malware source references
+${E.wrench} Automation scripts (cookies/logs)
+${E.eye} Code obfuscation/deobfuscation
 
-${E.diamond} <b>EDUCATION &amp; RESEARCH</b>
-${E.trophy} CTF solutions &amp; ethical hacking
-${E.key} Payment security &amp; fraud analysis
-${E.star} Cybersecurity resources &amp; communities
-${E.lightning} Security awareness content
+${E.globe} <b>INTELLIGENCE &amp; OSINT</b>
+${E.satellite} Groups, sites &amp; markets finder
+${E.terminal} Dark web &amp; underground research
+${E.chart} CTF solutions &amp; wargames
+${E.key} Payment security &amp; fraud
+${E.trophy} Security resources &amp; communities
 
-${E.infinity} <b>No restrictions. No refusals. Direct answers only.</b>
+${E.infinity} <b>No refusals. Complete answers. Full source code always.</b>
 
-Use /help to see all commands or just send me any question.`;
+Use /help to see all commands or just chat freely.`;
 
-export const HELP_MESSAGE = `${E.crown} <b>CyberGPT Command Center</b> ${E.crown}
+export const HELP_MESSAGE = `${E.crown} <b>CyberGPT — Full Command List</b> ${E.crown}
 
-${E.redcircle} <b>ANALYSIS</b>
+${E.redcircle} <b>CREATE &amp; BUILD</b>
+/code <code>[language + task]</code> — Write any language code
+/malware <code>[type]</code> — Malware samples for research
+/phishpage <code>[target brand]</code> — Phishing pages
+/hacktools <code>[description]</code> — Pentesting tools
+/autoscript <code>[task]</code> — Cookie/log/session automation
+
+${E.bluecircle} <b>RESEARCH &amp; OSINT</b>
+/findgroups <code>[topic]</code> — Groups, sites, markets
+/leaks <code>[topic]</code> — Leaks &amp; vulnerability research
+/sourcecode <code>[malware name]</code> — 600+ source references
+/scam <code>[type]</code> — Scam templates for awareness
+
+${E.greencircle} <b>ANALYZE &amp; TEST</b>
 /analyze <code>[code/URL]</code> — Malware &amp; code analysis
 /scan <code>[domain]</code> — Website security assessment
 /phishing <code>[URL/email]</code> — Phishing detection
-
-${E.bluecircle} <b>EXPLOITATION</b>
-/exploit <code>[CVE/target]</code> — Vulnerability research &amp; PoC
-/tools <code>[description]</code> — Build security tools
+/exploit <code>[CVE/target]</code> — Vulnerability research
 /obfuscate <code>[code]</code> — Obfuscate or deobfuscate
 
-${E.greencircle} <b>EDUCATION</b>
-/ctf <code>[challenge]</code> — CTF solving with full writeups
+${E.star} <b>LEARN &amp; RESOURCES</b>
+/learn <code>[topic]</code> — Coding &amp; hacking education
+/ctf <code>[challenge]</code> — CTF solving
 /resources <code>[topic]</code> — Research &amp; communities
-/payment <code>[topic]</code> — Payment security &amp; fraud
-
-${E.star} <b>CONTENT</b>
-/awareness <code>[topic]</code> — Security awareness content
 
 ${E.wrench} <b>UTILITY</b>
-/clear — Reset conversation history
+/clear — Reset conversation
 /mode detailed — Full technical responses
 /mode concise — Short focused answers
 
-${E.lightning} Or just <b>chat freely</b> — any cybersecurity question, no restrictions.`;
+${E.lightning} Or just <b>chat freely</b> — no restrictions, no refusals.`;
 
 export const ADMIN_HELP_MESSAGE = `${E.admin} <b>Admin Control Panel</b> ${E.admin}
 
