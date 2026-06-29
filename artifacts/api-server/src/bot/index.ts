@@ -7,7 +7,7 @@ import {
   setLastBotMessage, getLastBotMessageId,
 } from "./session.js";
 import { formatForTelegram, splitMessage } from "./formatter.js";
-import { E } from "./emojis.js";
+import { E, btn } from "./emojis.js";
 import {
   isAdmin, isBanned, trackUser, banUser, unbanUser,
   getStats, getAllUserIds, logBroadcast,
@@ -20,51 +20,51 @@ import { readTelegramFile } from "./fileReader.js";
 const MAIN_MENU_KEYBOARD: TelegramBot.InlineKeyboardMarkup = {
   inline_keyboard: [
     [
-      { text: `${E.redcircle} Malware (Research)`,  callback_data: "cmd_malware" },
-      { text: `${E.bluecircle} Phish Page`,         callback_data: "cmd_phishpage" },
+      { text: `🔴 Malware (Research)`,  callback_data: "cmd_malware" },
+      { text: `🔵 Phish Page`,          callback_data: "cmd_phishpage" },
     ],
     [
-      { text: `${E.greencircle} Hack Tools`,        callback_data: "cmd_hacktools" },
-      { text: `${E.redcircle} Write Any Code`,      callback_data: "cmd_code" },
+      { text: `🟢 Hack Tools`,          callback_data: "cmd_hacktools" },
+      { text: `🔴 Write Any Code`,      callback_data: "cmd_code" },
     ],
     [
-      { text: `${E.bluecircle} Find Groups/Sites`,  callback_data: "cmd_findgroups" },
-      { text: `${E.greencircle} Scam Templates`,    callback_data: "cmd_scam" },
+      { text: `🔵 Find Groups/Sites`,   callback_data: "cmd_findgroups" },
+      { text: `🟢 Scam Templates`,      callback_data: "cmd_scam" },
     ],
     [
-      { text: `${E.redcircle} Leaks & Vulns`,       callback_data: "cmd_leaks" },
-      { text: `${E.bluecircle} Auto Scripts`,       callback_data: "cmd_autoscript" },
+      { text: `🔴 Leaks & Vulns`,       callback_data: "cmd_leaks" },
+      { text: `🔵 Auto Scripts`,        callback_data: "cmd_autoscript" },
     ],
     [
-      { text: `${E.greencircle} Source Codes 600+`, callback_data: "cmd_sourcecode" },
-      { text: `${E.redcircle} Obfuscate/Deobf`,    callback_data: "cmd_obfuscate" },
+      { text: `🟢 Source Codes 600+`,   callback_data: "cmd_sourcecode" },
+      { text: `🔴 Obfuscate/Deobf`,     callback_data: "cmd_obfuscate" },
     ],
     [
-      { text: `${E.bluecircle} Analyze Malware`,    callback_data: "cmd_analyze" },
-      { text: `${E.greencircle} Scan Website`,      callback_data: "cmd_scan" },
+      { text: `🔵 Analyze Malware`,     callback_data: "cmd_analyze" },
+      { text: `🟢 Scan Website`,        callback_data: "cmd_scan" },
     ],
     [
-      { text: `${E.redcircle} Exploit Research`,    callback_data: "cmd_exploit" },
-      { text: `${E.bluecircle} CTF Solver`,         callback_data: "cmd_ctf" },
+      { text: `🔴 Exploit Research`,    callback_data: "cmd_exploit" },
+      { text: `🔵 CTF Solver`,          callback_data: "cmd_ctf" },
     ],
     [
-      { text: `${E.greencircle} Learn Hacking`,     callback_data: "cmd_learn" },
-      { text: `${E.redcircle} Resources`,           callback_data: "cmd_resources" },
+      { text: `🟢 Learn Hacking`,       callback_data: "cmd_learn" },
+      { text: `🔴 Resources`,           callback_data: "cmd_resources" },
     ],
     [
-      { text: `${E.brain} Detailed Mode`,           callback_data: "mode_detailed" },
-      { text: `${E.lightning} Concise Mode`,        callback_data: "mode_concise" },
+      { text: `🧠 Detailed Mode`,       callback_data: "mode_detailed" },
+      { text: `⚡ Concise Mode`,        callback_data: "mode_concise" },
     ],
     [
-      { text: `${E.trash} Clear History`,           callback_data: "cmd_clear" },
-      { text: `${E.crown} Help`,                    callback_data: "cmd_help" },
+      { text: `🗑 Clear History`,        callback_data: "cmd_clear" },
+      { text: `👑 Help`,                callback_data: "cmd_help" },
     ],
   ],
 };
 
 const BACK_KEYBOARD: TelegramBot.InlineKeyboardMarkup = {
   inline_keyboard: [
-    [{ text: `${E.rocket} Back to Menu`, callback_data: "cmd_start" }],
+    [{ text: `🚀 Back to Menu`, callback_data: "cmd_start" }],
   ],
 };
 

@@ -17,6 +17,16 @@ function e(id: string, fallback: string): string {
   return `<tg-emoji emoji-id="${id}">${fallback}</tg-emoji>`;
 }
 
+/**
+ * Strip <tg-emoji> tags so the result is safe for inline keyboard button text.
+ * Telegram buttons are plain text — they never parse HTML.
+ * Usage:  { text: btn(E.lightning) + " Concise Mode", ... }
+ */
+export function btn(emoji: string): string {
+  const m = emoji.match(/<tg-emoji[^>]*>([^<]*)<\/tg-emoji>/);
+  return m ? (m[1] ?? emoji) : emoji;
+}
+
 export const E = {
   // ── Confirmed IDs from user's raw message data ────────────────────────────
   lightning:   e("5400363978159323684", "⚡"),
