@@ -20,51 +20,51 @@ import { readTelegramFile } from "./fileReader.js";
 const MAIN_MENU_KEYBOARD: TelegramBot.InlineKeyboardMarkup = {
   inline_keyboard: [
     [
-      { text: `🔴 Malware (Research)`,  callback_data: "cmd_malware" },
-      { text: `🔵 Phish Page`,          callback_data: "cmd_phishpage" },
+      { text: `Malware (Research)`,  callback_data: "cmd_malware" },
+      { text: `Phish Page`,          callback_data: "cmd_phishpage" },
     ],
     [
-      { text: `🟢 Hack Tools`,          callback_data: "cmd_hacktools" },
-      { text: `🔴 Write Any Code`,      callback_data: "cmd_code" },
+      { text: `Hack Tools`,          callback_data: "cmd_hacktools" },
+      { text: `Write Any Code`,      callback_data: "cmd_code" },
     ],
     [
-      { text: `🔵 Find Groups/Sites`,   callback_data: "cmd_findgroups" },
-      { text: `🟢 Scam Templates`,      callback_data: "cmd_scam" },
+      { text: `Find Groups / Sites`, callback_data: "cmd_findgroups" },
+      { text: `Scam Templates`,      callback_data: "cmd_scam" },
     ],
     [
-      { text: `🔴 Leaks & Vulns`,       callback_data: "cmd_leaks" },
-      { text: `🔵 Auto Scripts`,        callback_data: "cmd_autoscript" },
+      { text: `Leaks & Vulns`,       callback_data: "cmd_leaks" },
+      { text: `Auto Scripts`,        callback_data: "cmd_autoscript" },
     ],
     [
-      { text: `🟢 Source Codes 600+`,   callback_data: "cmd_sourcecode" },
-      { text: `🔴 Obfuscate/Deobf`,     callback_data: "cmd_obfuscate" },
+      { text: `Source Codes 600+`,   callback_data: "cmd_sourcecode" },
+      { text: `Obfuscate / Deobf`,   callback_data: "cmd_obfuscate" },
     ],
     [
-      { text: `🔵 Analyze Malware`,     callback_data: "cmd_analyze" },
-      { text: `🟢 Scan Website`,        callback_data: "cmd_scan" },
+      { text: `Analyze Malware`,     callback_data: "cmd_analyze" },
+      { text: `Scan Website`,        callback_data: "cmd_scan" },
     ],
     [
-      { text: `🔴 Exploit Research`,    callback_data: "cmd_exploit" },
-      { text: `🔵 CTF Solver`,          callback_data: "cmd_ctf" },
+      { text: `Exploit Research`,    callback_data: "cmd_exploit" },
+      { text: `CTF Solver`,          callback_data: "cmd_ctf" },
     ],
     [
-      { text: `🟢 Learn Hacking`,       callback_data: "cmd_learn" },
-      { text: `🔴 Resources`,           callback_data: "cmd_resources" },
+      { text: `Learn Hacking`,       callback_data: "cmd_learn" },
+      { text: `Resources`,           callback_data: "cmd_resources" },
     ],
     [
-      { text: `🧠 Detailed Mode`,       callback_data: "mode_detailed" },
-      { text: `⚡ Concise Mode`,        callback_data: "mode_concise" },
+      { text: `Detailed Mode`,       callback_data: "mode_detailed" },
+      { text: `Concise Mode`,        callback_data: "mode_concise" },
     ],
     [
-      { text: `🗑 Clear History`,        callback_data: "cmd_clear" },
-      { text: `👑 Help`,                callback_data: "cmd_help" },
+      { text: `Clear History`,       callback_data: "cmd_clear" },
+      { text: `Help`,                callback_data: "cmd_help" },
     ],
   ],
 };
 
 const BACK_KEYBOARD: TelegramBot.InlineKeyboardMarkup = {
   inline_keyboard: [
-    [{ text: `🚀 Back to Menu`, callback_data: "cmd_start" }],
+    [{ text: `Back to Menu`, callback_data: "cmd_start" }],
   ],
 };
 
@@ -193,12 +193,9 @@ export function startBot(): TelegramBot | null {
     }
   }
 
-  function checkBanned(userId: number, chatId: number): boolean {
-    if (isBanned(userId)) {
-      bot.sendMessage(chatId, `${E.ban} You are banned from this bot.`, { parse_mode: "HTML" }).catch(() => {});
-      return true;
-    }
-    return false;
+  /** Returns true (block) if the user is NOT the admin. Silently ignores everyone else. */
+  function checkAccess(userId: number, _chatId: number): boolean {
+    return !isAdmin(userId);
   }
 
   // ── All command definitions ───────────────────────────────────────────────
@@ -301,7 +298,7 @@ export function startBot(): TelegramBot | null {
     bot.onText(regex, async (msg, match) => {
       const chatId = msg.chat.id;
       const userId = msg.from?.id ?? chatId;
-      if (checkBanned(userId, chatId)) return;
+      if (checkAccess(userId, chatId)) return;
       trackUser(userId, msg.from?.first_name, msg.from?.username);
       const input = match?.[1]?.trim();
       if (!input) {
@@ -317,7 +314,7 @@ export function startBot(): TelegramBot | null {
   bot.onText(/^\/start(?:\s|$)/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
-    if (checkBanned(userId, chatId)) return;
+    if (checkAccess(userId, chatId)) return;
     trackUser(userId, msg.from?.first_name, msg.from?.username);
     await deleteLastBotMsg(chatId, userId);
     const sent = await bot.sendMessage(chatId, START_MESSAGE, {
@@ -333,7 +330,7 @@ export function startBot(): TelegramBot | null {
   bot.onText(/^\/help(?:\s|$)/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
-    if (checkBanned(userId, chatId)) return;
+    if (checkAccess(userId, chatId)) return;
     await deleteLastBotMsg(chatId, userId);
     const sent = await bot.sendMessage(chatId, HELP_MESSAGE, {
       parse_mode: "HTML",
@@ -348,7 +345,7 @@ export function startBot(): TelegramBot | null {
   bot.onText(/^\/clear(?:\s|$)/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
-    if (checkBanned(userId, chatId)) return;
+    if (checkAccess(userId, chatId)) return;
     clearSession(userId);
     await sendReply(chatId, userId,
       `${E.check} Conversation cleared.\n\n${E.lightning} Send me anything to begin.`,
@@ -361,7 +358,7 @@ export function startBot(): TelegramBot | null {
   bot.onText(/^\/mode(?:\s+(.+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
-    if (checkBanned(userId, chatId)) return;
+    if (checkAccess(userId, chatId)) return;
     const arg = match?.[1]?.trim().toLowerCase();
     if (arg === "detailed" || arg === "concise") {
       setMode(userId, arg);
@@ -468,7 +465,7 @@ export function startBot(): TelegramBot | null {
     const msgId = query.message?.message_id;
     if (!chatId) return;
     await bot.answerCallbackQuery(query.id).catch(() => {});
-    if (checkBanned(userId, chatId)) return;
+    if (checkAccess(userId, chatId)) return;
 
     const data = query.data ?? "";
 
@@ -555,7 +552,7 @@ export function startBot(): TelegramBot | null {
   bot.on("document", async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
-    if (checkBanned(userId, chatId)) return;
+    if (checkAccess(userId, chatId)) return;
     trackUser(userId, msg.from?.first_name, msg.from?.username);
 
     const doc = msg.document;
@@ -605,7 +602,7 @@ export function startBot(): TelegramBot | null {
 
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
-    if (checkBanned(userId, chatId)) return;
+    if (checkAccess(userId, chatId)) return;
     trackUser(userId, msg.from?.first_name, msg.from?.username);
 
     const text = msg.text.trim();
