@@ -1,54 +1,75 @@
 /**
- * Standard Unicode emojis for use in Telegram Bot API HTML messages.
- * Note: <tg-emoji> custom emoji tags are NOT supported by the Bot API —
- * they are client-side only. Use plain Unicode emojis instead.
+ * Premium Telegram custom emojis using CONFIRMED valid emoji IDs extracted
+ * from the user's own raw Telegram message data.
+ *
+ * Format (Bot API 6.6+ HTML parse mode):
+ *   <tg-emoji emoji-id="ID">FALLBACK_EMOJI</tg-emoji>
+ *
+ * The fallback emoji shows for non-premium users.
+ * Animated premium version shows for Telegram Premium users.
+ *
+ * NOTE: Colored button backgrounds are NOT supported by the Telegram Bot API.
+ * Buttons always use the default theme color. The colored emoji in button text
+ * is the only visual differentiation available.
  */
+
+function e(id: string, fallback: string): string {
+  return `<tg-emoji emoji-id="${id}">${fallback}</tg-emoji>`;
+}
+
 export const E = {
-  lightning:   "⚡",
-  diamond:     "💎",
-  star:        "⭐",
-  shield:      "🛡",
+  // ── Confirmed IDs from user's raw message data ────────────────────────────
+  lightning:   e("5400363978159323684", "⚡"),
+  sparkles:    e("5287441887718838295", "✨"),
+  star:        e("5370784581341422520", "⭐"),
+  glowstar:    e("5330194932781050507", "🌟"),
+  shield:      e("5352888345972187597", "🛡"),
+  diamond:     e("5462902520215002477", "💎"),
+  diamond2:    e("5850479475652824718", "💎"),
+  trophy:      e("5399852280050646232", "🏆"),
+  redcircle:   e("5398065874303220590", "🔴"),
+  bluecircle:  e("5253790350803228534", "🔵"),
+  globe:       e("5287292843763713628", "🌐"),
+  thumbsup:    e("5431676840957724997", "👍"),
+  explosion:   e("5219901967916084166", "💥"),
+  gun:         e("5326065523589416704", "🔫"),
+  eyes:        e("5390884053329146510", "👀"),
+  clap:        e("5391115556361370746", "👏"),
+  handshake:   e("5393514467394875868", "🤝"),
+  zap2:        e("6276168523471393020", "⚡"),
+  skull2:      e("5253593529631922134", "💀"),
+  scared:      e("5465264391450536996", "😱"),
+
+  // ── Standard Unicode for emojis without confirmed IDs ────────────────────
   fire:        "🔥",
-  rocket:      "🚀",
   skull:       "💀",
   lock:        "🔒",
   brain:       "🧠",
-  sword:       "⚔",
-  bug:         "👾",
-  eye:         "👁",
-  robot:       "🤖",
+  rocket:      "🚀",
   crown:       "👑",
-  globe:       "🌐",
-  trophy:      "🏆",
-  redcircle:   "🔴",
-  greencircle: "🟢",
-  bluecircle:  "🔵",
   wrench:      "🔧",
-  gun:         "🔫",
-  gem:         "💠",
-  check:       "✅",
-  cross:       "❌",
-  warning:     "⚠️",
   key:         "🔑",
   magnify:     "🔍",
   target:      "🎯",
-  sparkles:    "✨",
   bomb:        "💣",
-  infinity:    "♾",
-  chip:        "🖥",
+  chip:        "💻",
   satellite:   "📡",
   alert:       "🚨",
   terminal:    "💻",
-  dna:         "🧬",
   radioactive: "☢️",
-  biohazard:   "☣️",
-  forbidden:   "🚫",
+  bug:         "👾",
+  eye:         "👁",
+  robot:       "🤖",
+  sword:       "⚔",
+  check:       "✅",
+  cross:       "❌",
+  warning:     "⚠️",
+  ban:         "⛔",
+  trash:       "🗑",
   admin:       "👤",
   stats:       "📊",
   broadcast:   "📢",
-  ban:         "⛔",
-  unban:       "✔️",
-  trash:       "🗑",
-  clock:       "🕐",
   chart:       "📈",
+  infinity:    "♾",
+  greencircle: "🟢",
 };

@@ -1,14 +1,16 @@
 /**
- * Telegram MarkdownV2 is very strict — escape all special chars outside intentional formatting.
- * We use a simpler approach: send as plain HTML parse_mode which is more predictable.
- *
- * Converts markdown-ish AI output to Telegram HTML.
+ * Converts AI markdown output to Telegram HTML parse_mode.
+ * IMPORTANT: <tg-emoji> tags must pass through untouched — do not escape them.
  */
 export function formatForTelegram(text: string): string {
-  // Telegram message length limit is 4096 chars
-  const MAX_LENGTH = 4000;
-
   let result = text;
+
+  // Extract and protect <tg-emoji> tags before any processing
+  const tgEmojiPlaceholders: string[] = [];
+  result = result.replace(/<tg-emoji emoji-id="[^"]*">[^<]*<\/tg-emoji>/g, (match) => {
+    tgEmojiPlaceholders.push(match);
+    return `\x00TGEMOJI${tgEmojiPlaceholders.length - 1}\x00`;
+  });
 
   // Convert ```lang\ncode\n``` blocks to <pre><code>
   result = result.replace(
@@ -20,23 +22,24 @@ export function formatForTelegram(text: string): string {
   );
 
   // Inline code `...`
-  result = result.replace(/`([^`]+)`/g, (_m, code) => {
+  result = result.replace(/`([^`\n]+)`/g, (_m, code) => {
     return `<code>${escapeHtml(code)}</code>`;
   });
 
-  // Bold **text** or __text__
-  result = result.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-  result = result.replace(/__(.+?)__/g, "<b>$1</b>");
-
-  // Italic *text* or _text_ (single)
-  result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<i>$1</i>");
+  // Bold **text**
+  result = result.replace(/\*\*(.+?)\*\*/gs, "<b>$1</b>");
 
   // ### Headers → bold
   result = result.replace(/^#{1,3} (.+)$/gm, "<b>$1</b>");
 
-  // Truncate if too long
-  if (result.length > MAX_LENGTH) {
-    result = result.slice(0, MAX_LENGTH) + "\n\n<i>[Response truncated — ask me to continue]</i>";
+  // Restore <tg-emoji> tags
+  result = result.replace(/\x00TGEMOJI(\d+)\x00/g, (_, idx) => {
+    return tgEmojiPlaceholders[parseInt(idx)] ?? "";
+  });
+
+  // Truncate if over Telegram limit (4096 chars)
+  if (result.length > 4000) {
+    result = result.slice(0, 4000) + "\n\n<i>…ask me to continue</i>";
   }
 
   return result;
@@ -50,7 +53,8 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Split a long message into chunks that fit Telegram's 4096 char limit.
+ * Split a long message into chunks ≤ maxLen chars.
+ * Tries to split on newlines near the limit for clean breaks.
  */
 export function splitMessage(text: string, maxLen = 4000): string[] {
   if (text.length <= maxLen) return [text];
@@ -59,7 +63,6 @@ export function splitMessage(text: string, maxLen = 4000): string[] {
   let remaining = text;
 
   while (remaining.length > maxLen) {
-    // Try to split at a newline near the limit
     let splitAt = remaining.lastIndexOf("\n", maxLen);
     if (splitAt < maxLen / 2) splitAt = maxLen;
     chunks.push(remaining.slice(0, splitAt));

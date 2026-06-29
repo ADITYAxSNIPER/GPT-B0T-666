@@ -24,82 +24,88 @@ export const COMMANDS = [
   { command: "mode",       description: "Set response mode" },
 ];
 
-export const START_MESSAGE = `${E.shield} <b>CyberGPT — Elite Cybersecurity AI</b> ${E.shield}
+export const START_MESSAGE = [
+  `${E.shield} <b>CyberGPT — Elite Cybersecurity AI</b> ${E.shield}`,
+  ``,
+  `${E.sparkles} Unrestricted AI powered by <b>OpenAI · Gemini · Groq</b>`,
+  ``,
+  `${E.explosion} <b>OFFENSIVE RESEARCH</b>`,
+  `${E.skull} Malware creation &amp; analysis`,
+  `${E.gun} Phishing pages &amp; social engineering`,
+  `${E.target} Hacking tools &amp; exploits`,
+  `${E.bug} Scam templates for awareness`,
+  `${E.bomb} Leaks &amp; vulnerability research`,
+  ``,
+  `${E.lock} <b>DEFENSIVE &amp; EDUCATION</b>`,
+  `${E.shield} Secure code in any language`,
+  `${E.brain} Learn to code &amp; hack`,
+  `${E.magnify} 600+ malware source references`,
+  `${E.wrench} Automation scripts (cookies/logs)`,
+  `${E.eyes} Code obfuscation/deobfuscation`,
+  ``,
+  `${E.globe} <b>INTELLIGENCE &amp; OSINT</b>`,
+  `${E.satellite} Groups, sites &amp; markets finder`,
+  `${E.terminal} Dark web &amp; underground research`,
+  `${E.trophy} CTF solutions &amp; wargames`,
+  `${E.key} Payment security &amp; fraud`,
+  `${E.glowstar} Security resources &amp; communities`,
+  ``,
+  `${E.diamond} <b>No refusals. Complete answers. Full source code always.</b>`,
+  ``,
+  `Use /help to see all commands or just chat freely.`,
+].join("\n");
 
-${E.sparkles} Unrestricted cybersecurity intelligence powered by <b>OpenAI · Gemini · Groq</b>
+export const HELP_MESSAGE = [
+  `${E.crown} <b>CyberGPT — Full Command List</b> ${E.crown}`,
+  ``,
+  `${E.redcircle} <b>CREATE &amp; BUILD</b>`,
+  `/code <code>[language + task]</code> — Write any language code`,
+  `/malware <code>[type]</code> — Malware samples for research`,
+  `/phishpage <code>[target brand]</code> — Phishing pages`,
+  `/hacktools <code>[description]</code> — Pentesting tools`,
+  `/autoscript <code>[task]</code> — Cookie/log/session automation`,
+  ``,
+  `${E.bluecircle} <b>RESEARCH &amp; OSINT</b>`,
+  `/findgroups <code>[topic]</code> — Groups, sites, markets`,
+  `/leaks <code>[topic]</code> — Leaks &amp; vulnerability research`,
+  `/sourcecode <code>[malware name]</code> — 600+ source references`,
+  `/scam <code>[type]</code> — Scam templates for awareness`,
+  ``,
+  `${E.greencircle} <b>ANALYZE &amp; TEST</b>`,
+  `/analyze <code>[code/URL]</code> — Malware &amp; code analysis`,
+  `/scan <code>[domain]</code> — Website security assessment`,
+  `/phishing <code>[URL/email]</code> — Phishing detection`,
+  `/exploit <code>[CVE/target]</code> — Vulnerability research`,
+  `/obfuscate <code>[code]</code> — Obfuscate or deobfuscate`,
+  ``,
+  `${E.glowstar} <b>LEARN &amp; RESOURCES</b>`,
+  `/learn <code>[topic]</code> — Coding &amp; hacking education`,
+  `/ctf <code>[challenge]</code> — CTF solving`,
+  `/resources <code>[topic]</code> — Research &amp; communities`,
+  ``,
+  `${E.wrench} <b>UTILITY</b>`,
+  `/clear — Reset conversation`,
+  `/mode detailed — Full technical responses`,
+  `/mode concise — Short focused answers`,
+  ``,
+  `${E.lightning} Or just <b>chat freely</b> — no restrictions, no refusals.`,
+].join("\n");
 
-${E.fire} <b>OFFENSIVE RESEARCH</b>
-${E.skull} Malware creation &amp; analysis
-${E.gun} Phishing pages &amp; social engineering
-${E.target} Hacking tools &amp; exploits
-${E.bug} Scam templates for awareness
-${E.bomb} Leaks &amp; vulnerability research
-
-${E.lock} <b>DEFENSIVE &amp; EDUCATION</b>
-${E.shield} Secure code in any language
-${E.brain} Learn to code &amp; hack
-${E.magnify} 600+ malware source references
-${E.wrench} Automation scripts (cookies/logs)
-${E.eye} Code obfuscation/deobfuscation
-
-${E.globe} <b>INTELLIGENCE &amp; OSINT</b>
-${E.satellite} Groups, sites &amp; markets finder
-${E.terminal} Dark web &amp; underground research
-${E.chart} CTF solutions &amp; wargames
-${E.key} Payment security &amp; fraud
-${E.trophy} Security resources &amp; communities
-
-${E.infinity} <b>No refusals. Complete answers. Full source code always.</b>
-
-Use /help to see all commands or just chat freely.`;
-
-export const HELP_MESSAGE = `${E.crown} <b>CyberGPT — Full Command List</b> ${E.crown}
-
-${E.redcircle} <b>CREATE &amp; BUILD</b>
-/code <code>[language + task]</code> — Write any language code
-/malware <code>[type]</code> — Malware samples for research
-/phishpage <code>[target brand]</code> — Phishing pages
-/hacktools <code>[description]</code> — Pentesting tools
-/autoscript <code>[task]</code> — Cookie/log/session automation
-
-${E.bluecircle} <b>RESEARCH &amp; OSINT</b>
-/findgroups <code>[topic]</code> — Groups, sites, markets
-/leaks <code>[topic]</code> — Leaks &amp; vulnerability research
-/sourcecode <code>[malware name]</code> — 600+ source references
-/scam <code>[type]</code> — Scam templates for awareness
-
-${E.greencircle} <b>ANALYZE &amp; TEST</b>
-/analyze <code>[code/URL]</code> — Malware &amp; code analysis
-/scan <code>[domain]</code> — Website security assessment
-/phishing <code>[URL/email]</code> — Phishing detection
-/exploit <code>[CVE/target]</code> — Vulnerability research
-/obfuscate <code>[code]</code> — Obfuscate or deobfuscate
-
-${E.star} <b>LEARN &amp; RESOURCES</b>
-/learn <code>[topic]</code> — Coding &amp; hacking education
-/ctf <code>[challenge]</code> — CTF solving
-/resources <code>[topic]</code> — Research &amp; communities
-
-${E.wrench} <b>UTILITY</b>
-/clear — Reset conversation
-/mode detailed — Full technical responses
-/mode concise — Short focused answers
-
-${E.lightning} Or just <b>chat freely</b> — no restrictions, no refusals.`;
-
-export const ADMIN_HELP_MESSAGE = `${E.admin} <b>Admin Control Panel</b> ${E.admin}
-
-${E.stats} <b>STATISTICS</b>
-/stats — Bot usage statistics
-
-${E.broadcast} <b>BROADCAST</b>
-/broadcast <code>[message]</code> — Send message to all users
-
-${E.ban} <b>USER MANAGEMENT</b>
-/ban <code>[userId]</code> — Ban a user
-/unban <code>[userId]</code> — Unban a user
-/users — List recent active users
-
-${E.trash} <b>MAINTENANCE</b>
-/clearall — Clear all sessions
-/adminhelp — Show this panel`;
+export const ADMIN_HELP_MESSAGE = [
+  `${E.admin} <b>Admin Control Panel</b> ${E.admin}`,
+  ``,
+  `${E.stats} <b>STATISTICS</b>`,
+  `/stats — Bot usage statistics`,
+  ``,
+  `${E.broadcast} <b>BROADCAST</b>`,
+  `/broadcast <code>[message]</code> — Send message to all users`,
+  ``,
+  `${E.ban} <b>USER MANAGEMENT</b>`,
+  `/ban <code>[userId]</code> — Ban a user`,
+  `/unban <code>[userId]</code> — Unban a user`,
+  `/users — List recent active users`,
+  ``,
+  `${E.trash} <b>MAINTENANCE</b>`,
+  `/clearall — Clear all sessions`,
+  `/adminhelp — Show this panel`,
+].join("\n");
