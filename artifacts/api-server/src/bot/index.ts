@@ -11,6 +11,7 @@ import { E, btn } from "./emojis.js";
 import {
   isAdmin, isBanned, trackUser, banUser, unbanUser,
   getStats, getAllUserIds, logBroadcast,
+  isPublicMode, setPublicMode,
 } from "./admin.js";
 import { extractCodeFiles, buildJsonBundle } from "./codeFiles.js";
 import { readTelegramFile } from "./fileReader.js";
@@ -206,9 +207,17 @@ export function startBot(): TelegramBot | null {
     }
   }
 
-  /** Returns true (block) if the user is NOT the admin. Silently ignores everyone else. */
-  function checkAccess(userId: number, _chatId: number): boolean {
-    return !isAdmin(userId);
+  /** Returns true (block) if user has no access. Admins always pass; public users pass only when public mode is ON. */
+  function checkAccess(userId: number, chatId: number): boolean {
+    if (isAdmin(userId)) return false;
+    if (isPublicMode()) {
+      if (isBanned(userId)) {
+        bot.sendMessage(chatId, `${E.ban} You are banned from this bot.`, { parse_mode: "HTML" }).catch(() => {});
+        return true;
+      }
+      return false;
+    }
+    return true; // private mode — silently ignore
   }
 
   // ── All command definitions ───────────────────────────────────────────────
@@ -389,6 +398,16 @@ export function startBot(): TelegramBot | null {
     }
   });
 
+  // ── /continue ─────────────────────────────────────────────────────────────
+
+  bot.onText(/^\/continue(?:\s|$)/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id ?? chatId;
+    if (checkAccess(userId, chatId)) return;
+    trackUser(userId, msg.from?.first_name, msg.from?.username);
+    await handleAI(chatId, userId, "Continue from exactly where you left off. Do not repeat anything already said — just continue the response.", undefined);
+  });
+
   // ── Admin commands ────────────────────────────────────────────────────────
 
   bot.onText(/^\/adminhelp(?:\s|$)/, async (msg) => {
@@ -404,7 +423,7 @@ export function startBot(): TelegramBot | null {
     if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
     const s = getStats();
     await sendReply(chatId, userId,
-      `${E.stats} <b>Bot Statistics</b>\n\n${E.chart} <b>Users</b>\n• Total: <code>${s.totalUsers}</code>\n• Active (1h): <code>${s.activeUsers}</code>\n• Banned: <code>${s.bannedCount}</code>\n\n${E.terminal} <b>Activity</b>\n• Messages processed: <code>${s.totalMessages}</code>\n• Uptime: <code>${s.uptimeHours}h</code>\n\n${E.lightning} <b>AI Engines Active</b>\n• OpenAI GPT-4o ${E.star}\n• Groq Llama-3.3 ${E.lightning}\n• Gemini 2.0 ${E.sparkles}`,
+      `${E.stats} <b>Bot Statistics</b>\n\n${E.chart} <b>Users</b>\n• Total: <code>${s.totalUsers}</code>\n• Active (1h): <code>${s.activeUsers}</code>\n• Banned: <code>${s.bannedCount}</code>\n\n${E.terminal} <b>Activity</b>\n• Messages processed: <code>${s.totalMessages}</code>\n• Uptime: <code>${s.uptimeHours}h</code>\n\n${s.publicMode ? E.greencircle : E.redcircle} <b>Access Mode:</b> ${s.publicMode ? "Public (all users)" : "Private (admin only)"}\n\n${E.lightning} <b>AI Engines Active</b>\n• OpenAI GPT-4o ${E.star}\n• Groq Llama-3.3 ${E.lightning}\n• Gemini 2.0 ${E.sparkles}`,
       BACK_KEYBOARD,
     );
   });
@@ -468,6 +487,28 @@ export function startBot(): TelegramBot | null {
     const userId = msg.from?.id ?? chatId;
     if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
     await bot.sendMessage(chatId, `${E.check} All sessions cleared.`, { parse_mode: "HTML" });
+  });
+
+  bot.onText(/^\/boton(?:\s|$)/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id ?? chatId;
+    if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
+    setPublicMode(true);
+    await bot.sendMessage(chatId,
+      `${E.greencircle} <b>Bot is now PUBLIC.</b>\n\nAll Telegram users can now access CyberGPT.\nUse /botoff to restrict back to admin only.`,
+      { parse_mode: "HTML" },
+    );
+  });
+
+  bot.onText(/^\/botoff(?:\s|$)/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id ?? chatId;
+    if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
+    setPublicMode(false);
+    await bot.sendMessage(chatId,
+      `${E.redcircle} <b>Bot is now PRIVATE.</b>\n\nOnly admins can access CyberGPT.\nUse /boton to open it to all users.`,
+      { parse_mode: "HTML" },
+    );
   });
 
   // ── Callback queries (inline buttons) ────────────────────────────────────

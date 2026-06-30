@@ -8,7 +8,20 @@ export function isAdmin(userId: number): boolean {
   return ADMIN_IDS.has(userId);
 }
 
-// Track all users who have interacted with the bot
+// ── Public mode toggle ────────────────────────────────────────────────────────
+// When OFF (default): only admins can use the bot.
+// When ON: any Telegram user can use the bot.
+let publicModeEnabled = false;
+
+export function isPublicMode(): boolean {
+  return publicModeEnabled;
+}
+
+export function setPublicMode(enabled: boolean): void {
+  publicModeEnabled = enabled;
+}
+
+// ── User tracking ─────────────────────────────────────────────────────────────
 const botUsers = new Map<number, { username?: string; firstName?: string; lastSeen: number; messageCount: number }>();
 const bannedUsers = new Set<number>();
 const broadcastLog: Array<{ text: string; sentAt: number; sentBy: number }> = [];
@@ -31,7 +44,7 @@ export function isBanned(userId: number): boolean {
 }
 
 export function banUser(userId: number): boolean {
-  if (ADMIN_IDS.has(userId)) return false; // can't ban admins
+  if (ADMIN_IDS.has(userId)) return false;
   bannedUsers.add(userId);
   return true;
 }
@@ -46,6 +59,7 @@ export function getStats(): {
   bannedCount: number;
   totalMessages: number;
   uptimeHours: number;
+  publicMode: boolean;
 } {
   const oneHourAgo = Date.now() - 60 * 60 * 1000;
   const activeUsers = [...botUsers.values()].filter(u => u.lastSeen > oneHourAgo).length;
@@ -55,6 +69,7 @@ export function getStats(): {
     bannedCount: bannedUsers.size,
     totalMessages,
     uptimeHours: Math.floor((Date.now() - botStartTime) / 3600000),
+    publicMode: publicModeEnabled,
   };
 }
 
