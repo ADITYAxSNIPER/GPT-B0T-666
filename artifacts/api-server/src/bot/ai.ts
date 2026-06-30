@@ -114,7 +114,7 @@ export async function askAI(
       ? SYSTEM_PROMPT + CONCISE_SUFFIX
       : SYSTEM_PROMPT;
 
-  const maxTokens = session.mode === "concise" ? 1024 : 4096;
+  const maxTokens = session.mode === "concise" ? 1024 : 8000;
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: systemContent },

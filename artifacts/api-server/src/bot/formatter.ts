@@ -37,23 +37,19 @@ export function formatForTelegram(text: string): string {
     return tgEmojiPlaceholders[parseInt(idx)] ?? "";
   });
 
-  // Escape any bare < or > that are NOT part of our safe HTML tags.
-  // Safe tags: <b> </b> <i> </i> <code> </code> <pre> </pre> <tg-emoji ...> </tg-emoji>
+  // Escape any bare < or > that are NOT part of our safe Telegram HTML tag set
   result = escapeBareAngles(result);
 
   return result;
 }
 
 /**
- * Escape angle brackets that are not part of our known safe Telegram HTML tag set.
+ * Escape angle brackets that are not part of known safe Telegram HTML tags.
  */
 function escapeBareAngles(html: string): string {
-  // Match every < or > and decide whether to escape it
-  return html.replace(/<\/?(?:b|i|code|pre|tg-emoji(?:\s[^>]*)?)>|<([^>]*)>|>/g, (match, badTag) => {
-    // If it matched a safe tag → keep it
-    if (badTag === undefined) return match;
-    // Otherwise it's a bare < with content → escape
-    return `&lt;${badTag}&gt;`;
+  return html.replace(/<\/?(?:b|i|code|pre|tg-emoji(?:\s[^>]*)?)>|<([^>]*)>/g, (match, badTag) => {
+    if (badTag === undefined) return match; // safe tag — keep it
+    return `&lt;${badTag}&gt;`;             // unknown tag — escape it
   });
 }
 
@@ -73,29 +69,51 @@ export function stripHtml(html: string): string {
     .replace(/&amp;/g, "&");
 }
 
+const MAX = 3900; // stay safely under Telegram's 4096 limit
+
 /**
- * Split a long HTML message into chunks ≤ maxLen chars.
- * Tag-aware: never cuts inside a <pre><code> block.
- * Closes open <b>/<i> tags at the split boundary and reopens them in the next chunk.
+ * Split a long HTML message into chunks ≤ MAX chars.
+ * - Never cuts a <pre><code> block mid-line (splits at newlines inside the block)
+ * - Closes open <b>/<i> tags at boundaries and reopens in next chunk
+ * - Handles code blocks that are themselves larger than MAX
  */
-export function splitMessage(text: string, maxLen = 4000): string[] {
+export function splitMessage(text: string, maxLen = MAX): string[] {
   if (text.length <= maxLen) return [text];
 
   const chunks: string[] = [];
   let remaining = text;
 
   while (remaining.length > maxLen) {
-    // Find a safe split point — prefer a newline before maxLen that's not inside a <pre> block
-    const preOpen = remaining.indexOf("<pre>");
-    const preClose = remaining.indexOf("</pre>");
+    const preOpen  = remaining.indexOf("<pre><code>");
+    const preClose = remaining.indexOf("</code></pre>");
 
     let splitAt: number;
 
-    if (preOpen !== -1 && preOpen < maxLen && (preClose === -1 || preClose >= maxLen)) {
-      // We are crossing a <pre> block — split before it
-      splitAt = preOpen > 0 ? preOpen : maxLen;
+    if (preOpen !== -1 && preOpen < maxLen) {
+      if (preClose !== -1 && preClose + 13 <= maxLen) {
+        // Entire <pre> block fits before maxLen — split after it
+        splitAt = preClose + 13; // length of "</code></pre>"
+      } else if (preOpen > 0) {
+        // <pre> starts before maxLen but doesn't close before it — split before the <pre>
+        const nlBefore = remaining.lastIndexOf("\n", preOpen);
+        splitAt = nlBefore > 0 ? nlBefore : preOpen;
+      } else {
+        // <pre> starts at position 0 and is larger than maxLen — split inside it at a newline
+        const contentStart = "<pre><code>".length;
+        const nlInside = remaining.lastIndexOf("\n", maxLen - 14); // leave room for closing tags
+        splitAt = nlInside > contentStart ? nlInside : maxLen - 14;
+        // Build a chunk that is a valid self-contained code block
+        const codeChunk = remaining.slice(0, splitAt);
+        const fullChunk = codeChunk.endsWith("</code></pre>")
+          ? codeChunk
+          : codeChunk + "\n</code></pre>";
+        chunks.push(fullChunk);
+        // Resume next chunk inside a new code block
+        remaining = "<pre><code>" + remaining.slice(splitAt).trimStart();
+        continue;
+      }
     } else {
-      // Normal split: last newline before maxLen
+      // No <pre> crossing — split at last newline before maxLen
       splitAt = remaining.lastIndexOf("\n", maxLen);
       if (splitAt < maxLen / 2) splitAt = maxLen;
     }
@@ -104,12 +122,12 @@ export function splitMessage(text: string, maxLen = 4000): string[] {
 
     // Close any open inline tags at the boundary
     const openTags = getUnclosedTags(chunk);
-    for (const tag of openTags.reverse()) chunk += `</${tag}>`;
+    for (const tag of [...openTags].reverse()) chunk += `</${tag}>`;
 
     chunks.push(chunk);
     remaining = remaining.slice(splitAt).trimStart();
 
-    // Reopen closed tags at the start of the next chunk
+    // Reopen closed tags at the start of next chunk
     for (const tag of openTags) remaining = `<${tag}>` + remaining;
   }
 
