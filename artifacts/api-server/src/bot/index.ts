@@ -6,7 +6,7 @@ import {
   clearSession, setMode, getSession,
   setLastBotMessage, getLastBotMessageId,
 } from "./session.js";
-import { formatForTelegram, splitMessage } from "./formatter.js";
+import { formatForTelegram, splitMessage, stripHtml } from "./formatter.js";
 import { E, btn } from "./emojis.js";
 import {
   isAdmin, isBanned, trackUser, banUser, unbanUser,
@@ -126,7 +126,20 @@ export function startBot(): TelegramBot | null {
         disable_web_page_preview: true,
       };
       if (i === chunks.length - 1 && keyboard) opts.reply_markup = keyboard;
-      const sent = await bot.sendMessage(chatId, chunks[i], opts);
+      let sent: TelegramBot.Message;
+      try {
+        sent = await bot.sendMessage(chatId, chunks[i], opts);
+      } catch (htmlErr: unknown) {
+        // If Telegram rejects the HTML, fall back to plain text
+        const e = htmlErr as { message?: string };
+        if (e.message?.includes("can't parse entities") || e.message?.includes("Bad Request")) {
+          const plainOpts: TelegramBot.SendMessageOptions = { disable_web_page_preview: true };
+          if (i === chunks.length - 1 && keyboard) plainOpts.reply_markup = keyboard;
+          sent = await bot.sendMessage(chatId, stripHtml(chunks[i]), plainOpts);
+        } else {
+          throw htmlErr;
+        }
+      }
       lastMsgId = sent.message_id;
     }
     if (lastMsgId) setLastBotMessage(userId, lastMsgId);
