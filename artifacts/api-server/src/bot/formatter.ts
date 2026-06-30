@@ -29,8 +29,19 @@ export function formatForTelegram(text: string): string {
   // Bold **text**
   result = result.replace(/\*\*(.+?)\*\*/gs, "<b>$1</b>");
 
+  // Italic *text* (single asterisk, not touching bold)
+  result = result.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<i>$1</i>");
+
   // ### Headers → bold
   result = result.replace(/^#{1,3} (.+)$/gm, "<b>$1</b>");
+
+  // Blockquote: lines starting with > 
+  result = result.replace(/^((?:&gt;[^\n]*\n?)+)/gm, (_m, block) => {
+    const inner = block.replace(/^&gt; ?/gm, "").trim();
+    return `<blockquote>${inner}</blockquote>\n`;
+  });
+  // Also handle raw > lines (before escaping — they get escaped, so handle &gt; above)
+  result = result.replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>");
 
   // Restore <tg-emoji> tags
   result = result.replace(/\x00TGEMOJI(\d+)\x00/g, (_, idx) => {
@@ -47,7 +58,7 @@ export function formatForTelegram(text: string): string {
  * Escape angle brackets that are not part of known safe Telegram HTML tags.
  */
 function escapeBareAngles(html: string): string {
-  return html.replace(/<\/?(?:b|i|code|pre|tg-emoji(?:\s[^>]*)?)>|<([^>]*)>/g, (match, badTag) => {
+  return html.replace(/<\/?(?:b|i|code|pre|blockquote|tg-emoji(?:\s[^>]*)?)>|<([^>]*)>/g, (match, badTag) => {
     if (badTag === undefined) return match; // safe tag — keep it
     return `&lt;${badTag}&gt;`;             // unknown tag — escape it
   });
@@ -138,7 +149,7 @@ export function splitMessage(text: string, maxLen = MAX): string[] {
 /** Returns list of tag names that are open but not yet closed in the given HTML snippet. */
 function getUnclosedTags(html: string): string[] {
   const stack: string[] = [];
-  const tagRe = /<(\/)?(b|i|code|pre)(?:\s[^>]*)?\s*>/gi;
+  const tagRe = /<(\/)?(b|i|code|pre|blockquote)(?:\s[^>]*)?\s*>/gi;
   let m: RegExpExecArray | null;
   while ((m = tagRe.exec(html)) !== null) {
     const closing = m[1];

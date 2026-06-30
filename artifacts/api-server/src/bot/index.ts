@@ -18,54 +18,9 @@ import { readTelegramFile } from "./fileReader.js";
 
 // ── Keyboards ────────────────────────────────────────────────────────────────
 
-const MAIN_MENU_KEYBOARD: TelegramBot.InlineKeyboardMarkup = {
+const HELP_KEYBOARD: TelegramBot.InlineKeyboardMarkup = {
   inline_keyboard: [
-    [
-      { text: `Malware (Research)`,  callback_data: "cmd_malware" },
-      { text: `Phish Page`,          callback_data: "cmd_phishpage" },
-    ],
-    [
-      { text: `Hack Tools`,          callback_data: "cmd_hacktools" },
-      { text: `Write Any Code`,      callback_data: "cmd_code" },
-    ],
-    [
-      { text: `Find Groups / Sites`, callback_data: "cmd_findgroups" },
-      { text: `Scam Templates`,      callback_data: "cmd_scam" },
-    ],
-    [
-      { text: `Leaks & Vulns`,       callback_data: "cmd_leaks" },
-      { text: `Auto Scripts`,        callback_data: "cmd_autoscript" },
-    ],
-    [
-      { text: `Source Codes 600+`,   callback_data: "cmd_sourcecode" },
-      { text: `Obfuscate / Deobf`,   callback_data: "cmd_obfuscate" },
-    ],
-    [
-      { text: `Analyze Malware`,     callback_data: "cmd_analyze" },
-      { text: `Scan Website`,        callback_data: "cmd_scan" },
-    ],
-    [
-      { text: `Exploit Research`,    callback_data: "cmd_exploit" },
-      { text: `CTF Solver`,          callback_data: "cmd_ctf" },
-    ],
-    [
-      { text: `Learn Hacking`,       callback_data: "cmd_learn" },
-      { text: `Resources`,           callback_data: "cmd_resources" },
-    ],
-    [
-      { text: `Detailed Mode`,       callback_data: "mode_detailed" },
-      { text: `Concise Mode`,        callback_data: "mode_concise" },
-    ],
-    [
-      { text: `Clear History`,       callback_data: "cmd_clear" },
-      { text: `Help`,                callback_data: "cmd_help" },
-    ],
-  ],
-};
-
-const BACK_KEYBOARD: TelegramBot.InlineKeyboardMarkup = {
-  inline_keyboard: [
-    [{ text: `Back to Menu`, callback_data: "cmd_start" }],
+    [{ text: `All Commands — /help`, callback_data: "cmd_help" }],
   ],
 };
 
@@ -173,7 +128,7 @@ export function startBot(): TelegramBot | null {
       {
         caption: `${E.diamond} <b>CyberGPT Bundle</b> — ${files.length} file${files.length > 1 ? "s" : ""} · JSON`,
         parse_mode: "HTML",
-        reply_markup: BACK_KEYBOARD,
+        reply_markup: HELP_KEYBOARD,
       },
       { filename: "cybergpt_code.json", contentType: "application/json" },
     ).catch((err) => logger.warn({ err }, "Failed to send JSON bundle"));
@@ -192,8 +147,7 @@ export function startBot(): TelegramBot | null {
       clearInterval(typingInterval);
       const files = extractCodeFiles(reply);
       const footer = `\n\n──────────────\n${providerBadge(provider)}`;
-      // If there are code files, send Back button on the JSON bundle instead of text
-      await sendReply(chatId, userId, reply + footer, files.length > 0 ? undefined : BACK_KEYBOARD);
+      await sendReply(chatId, userId, reply + footer);
       if (files.length > 0) {
         await sendCodeFiles(chatId, userId, reply);
       }
@@ -324,7 +278,7 @@ export function startBot(): TelegramBot | null {
       trackUser(userId, msg.from?.first_name, msg.from?.username);
       const input = match?.[1]?.trim();
       if (!input) {
-        await sendReply(chatId, userId, hint, BACK_KEYBOARD);
+        await sendReply(chatId, userId, hint, HELP_KEYBOARD);
         return;
       }
       await handleAI(chatId, userId, input, ctx);
@@ -342,7 +296,6 @@ export function startBot(): TelegramBot | null {
     const sent = await bot.sendMessage(chatId, START_MESSAGE, {
       parse_mode: "HTML",
       disable_web_page_preview: true,
-      reply_markup: MAIN_MENU_KEYBOARD,
     });
     setLastBotMessage(userId, sent.message_id);
   });
@@ -357,7 +310,7 @@ export function startBot(): TelegramBot | null {
     const sent = await bot.sendMessage(chatId, HELP_MESSAGE, {
       parse_mode: "HTML",
       disable_web_page_preview: true,
-      reply_markup: BACK_KEYBOARD,
+      reply_markup: HELP_KEYBOARD,
     });
     setLastBotMessage(userId, sent.message_id);
   });
@@ -371,7 +324,7 @@ export function startBot(): TelegramBot | null {
     clearSession(userId);
     await sendReply(chatId, userId,
       `${E.check} Conversation cleared.\n\n${E.lightning} Send me anything to begin.`,
-      BACK_KEYBOARD,
+      HELP_KEYBOARD,
     );
   });
 
@@ -387,13 +340,13 @@ export function startBot(): TelegramBot | null {
       const icon = arg === "detailed" ? E.brain : E.lightning;
       await sendReply(chatId, userId,
         `${icon} Mode set to <b>${arg}</b>.\n${arg === "concise" ? "Short, focused." : "Full technical responses."}`,
-        BACK_KEYBOARD,
+        HELP_KEYBOARD,
       );
     } else {
       const s = getSession(userId);
       await sendReply(chatId, userId,
         `${E.wrench} Current mode: <b>${s.mode}</b>\n\nUse /mode detailed or /mode concise`,
-        BACK_KEYBOARD,
+        HELP_KEYBOARD,
       );
     }
   });
@@ -414,7 +367,7 @@ export function startBot(): TelegramBot | null {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
     if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
-    await sendReply(chatId, userId, ADMIN_HELP_MESSAGE, BACK_KEYBOARD);
+    await sendReply(chatId, userId, ADMIN_HELP_MESSAGE, HELP_KEYBOARD);
   });
 
   bot.onText(/^\/stats(?:\s|$)/, async (msg) => {
@@ -424,7 +377,7 @@ export function startBot(): TelegramBot | null {
     const s = getStats();
     await sendReply(chatId, userId,
       `${E.stats} <b>Bot Statistics</b>\n\n${E.chart} <b>Users</b>\n• Total: <code>${s.totalUsers}</code>\n• Active (1h): <code>${s.activeUsers}</code>\n• Banned: <code>${s.bannedCount}</code>\n\n${E.terminal} <b>Activity</b>\n• Messages processed: <code>${s.totalMessages}</code>\n• Uptime: <code>${s.uptimeHours}h</code>\n\n${s.publicMode ? E.greencircle : E.redcircle} <b>Access Mode:</b> ${s.publicMode ? "Public (all users)" : "Private (admin only)"}\n\n${E.lightning} <b>AI Engines Active</b>\n• OpenAI GPT-4o ${E.star}\n• Groq Llama-3.3 ${E.lightning}\n• Gemini 2.0 ${E.sparkles}`,
-      BACK_KEYBOARD,
+      HELP_KEYBOARD,
     );
   });
 
@@ -435,7 +388,7 @@ export function startBot(): TelegramBot | null {
     const ids = getAllUserIds().slice(-20);
     await sendReply(chatId, userId,
       `${E.admin} <b>Recent Users</b>\n\n${ids.map(id => `• <code>${id}</code>`).join("\n") || "No users yet."}`,
-      BACK_KEYBOARD,
+      HELP_KEYBOARD,
     );
   });
 
@@ -489,6 +442,20 @@ export function startBot(): TelegramBot | null {
     await bot.sendMessage(chatId, `${E.check} All sessions cleared.`, { parse_mode: "HTML" });
   });
 
+  bot.onText(/^\/addadmin(?:\s+(\d+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id ?? chatId;
+    if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
+    const targetId = parseInt(match?.[1] ?? "");
+    if (isNaN(targetId)) { await bot.sendMessage(chatId, `${E.warning} Usage: /addadmin <code>[userId]</code>`, { parse_mode: "HTML" }); return; }
+    const { ADMIN_IDS } = await import("./admin.js");
+    ADMIN_IDS.add(targetId);
+    await bot.sendMessage(chatId,
+      `${E.admin} User <code>${targetId}</code> is now an <b>admin</b>.\n<i>Note: resets on bot restart — add to code for permanent access.</i>`,
+      { parse_mode: "HTML" },
+    );
+  });
+
   bot.onText(/^\/boton(?:\s|$)/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
@@ -539,7 +506,7 @@ export function startBot(): TelegramBot | null {
       const sent = await bot.sendMessage(chatId, HELP_MESSAGE, {
         parse_mode: "HTML",
         disable_web_page_preview: true,
-        reply_markup: BACK_KEYBOARD,
+        reply_markup: HELP_KEYBOARD,
       });
       setLastBotMessage(userId, sent.message_id);
       return;
@@ -550,7 +517,7 @@ export function startBot(): TelegramBot | null {
       if (msgId) await tryDelete(chatId, msgId);
       const sent = await bot.sendMessage(chatId,
         `${E.check} History cleared.\n\n${E.lightning} Send me anything to begin.`,
-        { parse_mode: "HTML", reply_markup: BACK_KEYBOARD },
+        { parse_mode: "HTML", reply_markup: HELP_KEYBOARD },
       );
       setLastBotMessage(userId, sent.message_id);
       return;
@@ -562,7 +529,7 @@ export function startBot(): TelegramBot | null {
       if (msgId) await tryDelete(chatId, msgId);
       const sent = await bot.sendMessage(chatId,
         `${mode === "detailed" ? E.brain : E.lightning} Mode set to <b>${mode}</b>.`,
-        { parse_mode: "HTML", reply_markup: BACK_KEYBOARD },
+        { parse_mode: "HTML", reply_markup: HELP_KEYBOARD },
       );
       setLastBotMessage(userId, sent.message_id);
       return;
@@ -594,7 +561,7 @@ export function startBot(): TelegramBot | null {
       if (msgId) await tryDelete(chatId, msgId);
       const sent = await bot.sendMessage(chatId, entry.hint, {
         parse_mode: "HTML",
-        reply_markup: BACK_KEYBOARD,
+        reply_markup: HELP_KEYBOARD,
       });
       setLastBotMessage(userId, sent.message_id);
       pendingContext.set(userId, entry.ctx);
@@ -632,7 +599,7 @@ export function startBot(): TelegramBot | null {
       await bot.sendMessage(
         chatId,
         `${E.warning} Could not read <code>${filename}</code>. Try pasting the content directly.`,
-        { parse_mode: "HTML", reply_markup: BACK_KEYBOARD },
+        { parse_mode: "HTML", reply_markup: HELP_KEYBOARD },
       );
       return;
     }
