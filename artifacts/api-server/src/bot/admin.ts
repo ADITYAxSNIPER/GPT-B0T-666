@@ -85,3 +85,64 @@ export function logBroadcast(text: string, sentBy: number): void {
 export function getRecentBroadcasts(): typeof broadcastLog {
   return broadcastLog.slice(-5);
 }
+
+  // ── Conversation log ─────────────────────────────────────────────────────────
+  export interface ConversationEntry {
+    userId: number;
+    firstName?: string;
+    username?: string;
+    question: string;
+    answer: string;
+    provider: string;
+    timestamp: number;
+  }
+
+  const conversationLogs: ConversationEntry[] = [];
+  const MAX_LOGS = 200;
+
+  export function logConversation(
+    userId: number,
+    question: string,
+    answer: string,
+    provider: string,
+  ): void {
+    const user = botUsers.get(userId);
+    conversationLogs.push({
+      userId,
+      firstName: user?.firstName,
+      username: user?.username,
+      question,
+      answer,
+      provider,
+      timestamp: Date.now(),
+    });
+    if (conversationLogs.length > MAX_LOGS) conversationLogs.shift();
+  }
+
+  export function getConversationLogs(limit = 10): ConversationEntry[] {
+    return conversationLogs.slice(-limit).reverse();
+  }
+
+  export function getUserLogs(userId: number): ConversationEntry[] {
+    return conversationLogs.filter(e => e.userId === userId).slice(-20).reverse();
+  }
+
+  export function getAllUsersDetailed(): Array<{
+    id: number;
+    firstName?: string;
+    username?: string;
+    messageCount: number;
+    lastSeen: number;
+    banned: boolean;
+  }> {
+    return [...botUsers.entries()].map(([id, u]) => ({
+      id,
+      firstName: u.firstName,
+      username: u.username,
+      messageCount: u.messageCount,
+      lastSeen: u.lastSeen,
+      banned: bannedUsers.has(id),
+    })).sort((a, b) => b.lastSeen - a.lastSeen);
+  }
+
+  
