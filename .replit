@@ -22,4 +22,3 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
-TELEGRAM_BOT_TOKEN = "8855843592:AAEjJYT4ylQU0Pemt6hMqAD1ZJdCWmwwp0c"
