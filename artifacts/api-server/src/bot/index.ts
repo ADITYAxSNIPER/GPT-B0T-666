@@ -12,8 +12,8 @@ import {
   isAdmin, isBanned, trackUser, banUser, unbanUser,
   getStats, getAllUserIds, logBroadcast,
   isPublicMode, setPublicMode,
+  logConversation, getUserLogs, getConversationLogs, getAllUsersDetailed,
 } from "./admin.js";
-import { extractCodeFiles, buildJsonBundle } from "./codeFiles.js";
 import { readTelegramFile } from "./fileReader.js";
 
 // ── Keyboards ────────────────────────────────────────────────────────────────
@@ -144,6 +144,7 @@ export function startBot(): TelegramBot | null {
     await sendTyping(chatId);
     try {
       const { reply, provider } = await askAI(userId, userText, contextPrefix);
+      logConversation(userId, userText, reply, String(provider));
       clearInterval(typingInterval);
       const files = extractCodeFiles(reply);
       const footer = `\n\n──────────────\n${providerBadge(provider)}`;
@@ -283,8 +284,8 @@ export function startBot(): TelegramBot | null {
       }
       await handleAI(chatId, userId, input, ctx);
     });
-  }
-
+    }
+  
   // ── /start ────────────────────────────────────────────────────────────────
 
   bot.onText(/^\/start(?:\s|$)/, async (msg) => {
@@ -441,9 +442,70 @@ export function startBot(): TelegramBot | null {
     const chatId = msg.chat.id;
     const userId = msg.from?.id ?? chatId;
     if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
-    const ids = getAllUserIds().slice(-20);
+    const allUsers = getAllUsersDetailed().slice(0, 30);
+    if (allUsers.length === 0) {
+      await bot.sendMessage(chatId, `${E.admin} No users yet.`, { parse_mode: "HTML" });
+      return;
+    }
+    const lines = allUsers.map(u => {
+      const name = u.firstName ? u.firstName + (u.username ? ` (@${u.username})` : ``) : (u.username ? `@${u.username}` : "Unknown");
+      const ago  = Math.floor((Date.now() - u.lastSeen) / 60000);
+      const when = ago < 60 ? `${ago}m ago` : `${Math.floor(ago/60)}h ago`;
+      const ban  = u.banned ? " 🚫" : "";
+      return `• <code>${u.id}</code> ${name}${ban}\n  💬 ${u.messageCount} msgs · last seen ${when}`;
+    });
     await sendReply(chatId, userId,
-      `${E.admin} <b>Recent Users</b>\n\n${ids.map(id => `• <code>${id}</code>`).join("\n") || "No users yet."}`,
+      `${E.admin} <b>All Users (${allUsers.length})</b>\n\n${lines.join("\n\n")}\n\n<i>Use /userlog [id] to see their chat history.</i>`,
+      HELP_KEYBOARD,
+    );
+  });
+
+
+  bot.onText(/^\/logs(?:\s|$)/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id ?? chatId;
+    if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
+    const logs = getConversationLogs(8);
+    if (logs.length === 0) {
+      await bot.sendMessage(chatId, `${E.admin} No conversations logged yet.`, { parse_mode: "HTML" });
+      return;
+    }
+    const entries = logs.map(l => {
+      const name = l.firstName ?? l.username ?? `User`;
+      const time = new Date(l.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      const q = l.question.slice(0, 80) + (l.question.length > 80 ? "…" : "");
+      const a = l.answer.slice(0, 100) + (l.answer.length > 100 ? "…" : "");
+      return `👤 <b>${name}</b> (<code>${l.userId}</code>) · ${time} · <i>${l.provider}</i>\n❓ ${q}\n🤖 ${a}`;
+    });
+    await sendReply(chatId, userId,
+      `${E.admin} <b>Recent Conversations</b>\n\n${entries.join("\n\n─────\n\n")}`,
+      HELP_KEYBOARD,
+    );
+  });
+
+  bot.onText(/^\/userlog(?:\s+(\d+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id ?? chatId;
+    if (!isAdmin(userId)) { await bot.sendMessage(chatId, `${E.ban} Unauthorized.`, { parse_mode: "HTML" }); return; }
+    const targetId = parseInt(match?.[1] ?? "");
+    if (isNaN(targetId)) {
+      await bot.sendMessage(chatId, `${E.warning} Usage: /userlog <code>[userId]</code>\n\nGet user IDs from /users`, { parse_mode: "HTML" });
+      return;
+    }
+    const logs = getUserLogs(targetId);
+    if (logs.length === 0) {
+      await bot.sendMessage(chatId, `${E.warning} No conversations found for <code>${targetId}</code>.`, { parse_mode: "HTML" });
+      return;
+}
+     const name = logs[0]?.firstName ?? logs[0]?.username ?? `User ${targetId}`;
+    const entries = logs.map(l => {
+      const time = new Date(l.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      const q = l.question.slice(0, 120) + (l.question.length > 120 ? "…" : "");
+      const a = l.answer.slice(0, 150) + (l.answer.length > 150 ? "…" : "");
+      return `🕐 ${time} · <i>${l.provider}</i>\n❓ ${q}\n🤖 ${a}`;
+    });
+    await sendReply(chatId, userId,
+      `${E.admin} <b>Conversations: ${name}</b> (<code>${targetId}</code>)\n\n${entries.join("\n\n─────\n\n")}`,
       HELP_KEYBOARD,
     );
   });
@@ -702,4 +764,5 @@ export function startBot(): TelegramBot | null {
   logger.info("CyberGPT Telegram bot started (polling)");
   return bot;
       }
-    
+
+      
