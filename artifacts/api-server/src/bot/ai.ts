@@ -159,5 +159,5 @@ return {
   reply: isRateLimit
     ? "⏳ Rate limit reached — all providers are busy. Please wait 60 seconds and try again."
     : "⚠️ All AI providers are currently unavailable. Please try again in a moment.",
-  provider: "DARK WEB 👽",
+  provider: "Groq",
 };
