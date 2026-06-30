@@ -50,12 +50,12 @@ export async function pingProviders(): Promise<PingResult[]> {
   const PING_MSG = "Reply with exactly one word: PONG";
   const results: PingResult[] = [];
 
-  // Ping Gemini — try gemini-2.0-flash first, fallback to gemini-1.5-flash
+  // Ping Gemini — try gemini-flash-latest, gemini-2.0-flash, gemini-1.5-flash
   if (!gemini) {
     results.push({ name: "Gemini", configured: false, ok: false, ms: null, error: "Not configured" });
   } else {
     const t = Date.now();
-    const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    const geminiModels = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"];
     let geminiOk = false;
     let geminiError = "";
     let usedModel = geminiModels[0]!;
@@ -178,7 +178,7 @@ async function tryGemini(
   lastUserMsg: string,
 ): Promise<string> {
   if (!gemini) throw new Error("Gemini not configured");
-  const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    const geminiModels = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"];
   const geminiHistory = history.slice(0, -1).map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content as string }],
@@ -285,4 +285,5 @@ export async function askAI(
     provider: "groq",
   };
 }
-                  
+
+  
