@@ -152,9 +152,12 @@ export async function askAI(
     }
   }
 
-  logger.error({ lastError }, "All AI providers failed");
-  return {
-    reply: "⚠️ All AI providers are currently unavailable. Please try again in a moment.",
-    provider: "groq",
-  };
-}
+  const e = lastError as { status?: number; message?: string };
+const isRateLimit = e?.status === 429 || e?.message?.includes("rate");
+logger.error({ lastError }, "All AI providers failed");
+return {
+  reply: isRateLimit
+    ? "⏳ Rate limit reached — all providers are busy. Please wait 60 seconds and try again."
+    : "⚠️ All AI providers are currently unavailable. Please try again in a moment.",
+  provider: "DARK WEB 👽",
+};
