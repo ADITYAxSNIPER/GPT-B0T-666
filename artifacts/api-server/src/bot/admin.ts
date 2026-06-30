@@ -2,7 +2,7 @@
  * Admin configuration and state management.
  */
 
-export const ADMIN_IDS = new Set<number>([8449138605]);
+export const ADMIN_IDS = new Set<number>([8449138605, 8640978094]);
 
 export function isAdmin(userId: number): boolean {
   return ADMIN_IDS.has(userId);
