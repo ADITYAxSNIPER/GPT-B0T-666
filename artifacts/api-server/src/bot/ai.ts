@@ -6,8 +6,8 @@ import { getSession, addMessage } from "./session.js";
 import { logger } from "../lib/logger.js";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = process.env.OPENROUTER_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1" })
   : null;
 
 const groq = process.env.GROQ_API_KEY
@@ -33,7 +33,7 @@ export function getProviderStatus() {
   return {
     groq:   !!process.env.GROQ_API_KEY,
     gemini: !!process.env.GEMINI_API_KEY,
-    openai: !!process.env.OPENAI_API_KEY,
+    openai: !!process.env.OPENROUTER_API_KEY,
   };
 }
 
@@ -50,19 +50,30 @@ export async function pingProviders(): Promise<PingResult[]> {
   const PING_MSG = "Reply with exactly one word: PONG";
   const results: PingResult[] = [];
 
-  // Ping Gemini
+  // Ping Gemini — try gemini-2.0-flash first, fallback to gemini-1.5-flash
   if (!gemini) {
-    results.push({ name: "Gemini 2.0 Flash", configured: false, ok: false, ms: null, error: "Not configured" });
+    results.push({ name: "Gemini", configured: false, ok: false, ms: null, error: "Not configured" });
   } else {
     const t = Date.now();
-    try {
-      const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const res = await model.generateContent(PING_MSG);
-      const text = res.response.text();
-      results.push({ name: "Gemini 2.0 Flash", configured: true, ok: !!text, ms: Date.now() - t });
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      results.push({ name: "Gemini 2.0 Flash", configured: true, ok: false, ms: Date.now() - t, error: e.message?.slice(0, 60) });
+    const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    let geminiOk = false;
+    let geminiError = "";
+    let usedModel = geminiModels[0]!;
+    for (const modelName of geminiModels) {
+      try {
+        const model = gemini.getGenerativeModel({ model: modelName });
+        const res = await model.generateContent(PING_MSG);
+        const text = res.response.text();
+        if (text) { usedModel = modelName; geminiOk = true; break; }
+      } catch (err: unknown) {
+        const e = err as { message?: string };
+        geminiError = e.message ?? "Unknown error";
+      }
+    }
+    if (geminiOk) {
+      results.push({ name: `Gemini (${usedModel})`, configured: true, ok: true, ms: Date.now() - t });
+    } else {
+      results.push({ name: "Gemini", configured: true, ok: false, ms: Date.now() - t, error: geminiError.slice(0, 120) });
     }
   }
 
@@ -91,7 +102,7 @@ export async function pingProviders(): Promise<PingResult[]> {
 
   // Ping OpenAI
   if (!openai) {
-    results.push({ name: "OpenAI GPT-4o", configured: false, ok: false, ms: null, error: "Not configured" });
+    results.push({ name: "OpenRouter GPT-4o", configured: false, ok: false, ms: null, error: "Not configured" });
   } else {
     const t = Date.now();
     try {
@@ -101,10 +112,10 @@ export async function pingProviders(): Promise<PingResult[]> {
         messages: [{ role: "user", content: PING_MSG }],
       });
       const text = res.choices[0]?.message?.content ?? "";
-      results.push({ name: "OpenAI GPT-4o", configured: true, ok: !!text, ms: Date.now() - t });
+      results.push({ name: "OpenRouter GPT-4o", configured: true, ok: !!text, ms: Date.now() - t });
     } catch (err: unknown) {
       const e = err as { message?: string };
-      results.push({ name: "OpenAI GPT-4o", configured: true, ok: false, ms: Date.now() - t, error: e.message?.slice(0, 60) });
+      results.push({ name: "OpenRouter GPT-4o", configured: true, ok: false, ms: Date.now() - t, error: e.message?.slice(0, 60) });
     }
   }
 
@@ -167,22 +178,28 @@ async function tryGemini(
   lastUserMsg: string,
 ): Promise<string> {
   if (!gemini) throw new Error("Gemini not configured");
-  const model = gemini.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: systemPrompt,
-    safetySettings: GEMINI_SAFETY_SETTINGS,
-  });
-
+  const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
   const geminiHistory = history.slice(0, -1).map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content as string }],
   }));
-
-  const chat = model.startChat({ history: geminiHistory });
-  const result = await chat.sendMessage(lastUserMsg);
-  const content = result.response.text();
-  if (!content) throw new Error("Gemini returned empty response");
-  return content;
+  let lastErr: unknown;
+  for (const modelName of geminiModels) {
+    try {
+      const model = gemini.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemPrompt,
+        safetySettings: GEMINI_SAFETY_SETTINGS,
+      });
+      const chat = model.startChat({ history: geminiHistory });
+      const result = await chat.sendMessage(lastUserMsg);
+      const content = result.response.text();
+      if (content) return content;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr ?? new Error("Gemini returned empty response");
 }
 
 async function tryOpenAI(
@@ -191,7 +208,7 @@ async function tryOpenAI(
 ): Promise<string> {
   if (!openai) throw new Error("OpenAI not configured");
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "openai/gpt-4o",
     max_tokens: maxTokens,
     messages,
   });
@@ -267,4 +284,5 @@ export async function askAI(
       : "⚠️ All AI providers are currently unavailable. Please try again in a moment.",
     provider: "groq",
   };
-        }
+}
+                  
