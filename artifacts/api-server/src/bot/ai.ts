@@ -18,7 +18,6 @@ const gemini = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
 
-// All Gemini safety categories disabled for research environment
 const GEMINI_SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT,        threshold: HarmBlockThreshold.BLOCK_NONE },
   { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,       threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -28,6 +27,114 @@ const GEMINI_SAFETY_SETTINGS = [
 
 const CONCISE_SUFFIX =
   "\n\nRespond concisely and directly. Limit to essential information only.";
+
+// ── Provider key status (for /status command) ────────────────────────────────
+export function getProviderStatus() {
+  return {
+    groq:   !!process.env.GROQ_API_KEY,
+    gemini: !!process.env.GEMINI_API_KEY,
+    openai: !!process.env.OPENAI_API_KEY,
+  };
+}
+
+// ── Live ping (for /ping command) ────────────────────────────────────────────
+export interface PingResult {
+  name: string;
+  configured: boolean;
+  ok: boolean;
+  ms: number | null;
+  error?: string;
+}
+
+export async function pingProviders(): Promise<PingResult[]> {
+  const PING_MSG = "Reply with exactly one word: PONG";
+  const results: PingResult[] = [];
+
+  // Ping Gemini
+  if (!gemini) {
+    results.push({ name: "Gemini 2.0 Flash", configured: false, ok: false, ms: null, error: "Not configured" });
+  } else {
+    const t = Date.now();
+    try {
+      const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const res = await model.generateContent(PING_MSG);
+      const text = res.response.text();
+      results.push({ name: "Gemini 2.0 Flash", configured: true, ok: !!text, ms: Date.now() - t });
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      results.push({ name: "Gemini 2.0 Flash", configured: true, ok: false, ms: Date.now() - t, error: e.message?.slice(0, 60) });
+    }
+  }
+
+  // Ping Groq
+  if (!groq) {
+    results.push({ name: "Groq Llama-3.3", configured: false, ok: false, ms: null, error: "Not configured" });
+  } else {
+    const t = Date.now();
+    try {
+      const res = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 5,
+        messages: [{ role: "user", content: PING_MSG }],
+      });
+      const text = res.choices[0]?.message?.content ?? "";
+      results.push({ name: "Groq Llama-3.3", configured: true, ok: !!text, ms: Date.now() - t });
+    } catch (err: unknown) {
+      const e = err as { message?: string; status?: number };
+      const isRate = e?.status === 429;
+      results.push({
+        name: "Groq Llama-3.3", configured: true, ok: false, ms: Date.now() - t,
+        error: isRate ? "Rate limited (wait 60s)" : e.message?.slice(0, 60),
+      });
+    }
+  }
+
+  // Ping OpenAI
+  if (!openai) {
+    results.push({ name: "OpenAI GPT-4o", configured: false, ok: false, ms: null, error: "Not configured" });
+  } else {
+    const t = Date.now();
+    try {
+      const res = await openai.chat.completions.create({
+        model: "gpt-4o",
+        max_tokens: 5,
+        messages: [{ role: "user", content: PING_MSG }],
+      });
+      const text = res.choices[0]?.message?.content ?? "";
+      results.push({ name: "OpenAI GPT-4o", configured: true, ok: !!text, ms: Date.now() - t });
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      results.push({ name: "OpenAI GPT-4o", configured: true, ok: false, ms: Date.now() - t, error: e.message?.slice(0, 60) });
+    }
+  }
+
+  return results;
+}
+
+// ── Silent retry helper ───────────────────────────────────────────────────────
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withRetry(fn: () => Promise<string>): Promise<string> {
+  try {
+    return await fn();
+  } catch (err: unknown) {
+    const e = err as { status?: number; message?: string };
+    const isRateLimit =
+      e?.status === 429 ||
+      e?.message?.toLowerCase().includes("rate") ||
+      e?.message?.toLowerCase().includes("quota");
+    if (isRateLimit) {
+      logger.warn("Rate limit hit — waiting 5s then retrying once...");
+      await sleep(5000);
+      return await fn();
+    }
+    throw err;
+  }
+}
+
+// ── Provider functions ────────────────────────────────────────────────────────
 
 async function tryGroq(
   messages: ChatCompletionMessageParam[],
@@ -40,7 +147,6 @@ async function tryGroq(
     messages: messages as Parameters<typeof groq.chat.completions.create>[0]["messages"],
   });
   const content = response.choices[0]?.message?.content ?? "";
-  // If Groq refused, throw so we fall through to next provider
   if (
     content.includes("I cannot") ||
     content.includes("I can't assist") ||
@@ -94,6 +200,8 @@ async function tryOpenAI(
   return content;
 }
 
+// ── Main export ───────────────────────────────────────────────────────────────
+
 export type AIProvider = "openai" | "groq" | "gemini";
 
 export async function askAI(
@@ -114,51 +222,49 @@ export async function askAI(
       ? SYSTEM_PROMPT + CONCISE_SUFFIX
       : SYSTEM_PROMPT;
 
-  const maxTokens = session.mode === "concise" ? 1024 : 8000;
+  // Reduced from 8000 → 1500 to stay within Groq free tier (6000 TPM)
+  const maxTokens = session.mode === "concise" ? 512 : 1500;
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: systemContent },
     ...session.messages,
   ];
 
-  // Provider order: Groq first (most permissive) → Gemini (safety off) → OpenAI (last resort)
+  // Gemini first (1M free tokens/min) → Groq → OpenAI
   const providers: Array<{ name: AIProvider; fn: () => Promise<string> }> = [
-    {
-      name: "groq",
-      fn: () => tryGroq(messages, maxTokens),
-    },
-    {
-      name: "gemini",
-      fn: () => tryGemini(systemContent, session.messages, fullUserMessage),
-    },
-    {
-      name: "openai",
-      fn: () => tryOpenAI(messages, maxTokens),
-    },
+    { name: "gemini", fn: () => tryGemini(systemContent, session.messages, fullUserMessage) },
+    { name: "groq",   fn: () => tryGroq(messages, maxTokens) },
+    { name: "openai", fn: () => tryOpenAI(messages, maxTokens) },
   ];
 
   let lastError: unknown;
   for (const provider of providers) {
     try {
-      const reply = await provider.fn();
+      const reply = await withRetry(provider.fn);
       if (reply) {
         addMessage(userId, "assistant", reply);
         return { reply, provider: provider.name };
       }
     } catch (err: unknown) {
       const e = err as { status?: number; message?: string };
-      logger.warn({ provider: provider.name, status: e.status, msg: e.message }, "AI provider failed, trying next");
+      logger.warn(
+        { provider: provider.name, status: e.status, msg: e.message },
+        "AI provider failed after retry, trying next",
+      );
       lastError = err;
     }
   }
 
   const e = lastError as { status?: number; message?: string };
-const isRateLimit = e?.status === 429 || e?.message?.includes("rate");
-logger.error({ lastError }, "All AI providers failed");
-return {
-  reply: isRateLimit
-    ? "⏳ Rate limit reached — all providers are busy. Please wait 60 seconds and try again."
-    : "⚠️ All AI providers are currently unavailable. Please try again in a moment.",
-  provider: "Groq",
-};
+  const isRateLimit =
+    e?.status === 429 ||
+    e?.message?.toLowerCase().includes("rate") ||
+    e?.message?.toLowerCase().includes("quota");
+  logger.error({ lastError }, "All AI providers failed");
+  return {
+    reply: isRateLimit
+      ? "⏳ All providers are rate-limited. Please wait 60 seconds and try again."
+      : "⚠️ All AI providers are currently unavailable. Please try again in a moment.",
+    provider: "groq",
+  };
         }
